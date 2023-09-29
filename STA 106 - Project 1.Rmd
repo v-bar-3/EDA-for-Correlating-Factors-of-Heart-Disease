@@ -1,0 +1,806 @@
+---
+title: "STA 106 - Project 1"
+author: "Vincent Barletta"
+date: "2023-01-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reading in the Data
+
+Professor's Suggestion: If you have only one minute to talk about your report, what would you say? That one minute of content should go into your abstract. If you had 3 minutes, what would you write? That should be key part of your result. If you have 5 minutes, put it in the introduction.
+
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+hd <- read.csv("C:/Users/HP/Downloads/heart_disease_health_indicators_BRFSS2015.csv")
+View(hd)
+
+hd$HeartDiseaseorAttack=as.factor(hd$HeartDiseaseorAttack)
+
+
+smoker.heart <- table(hd$HeartDiseaseorAttack, hd$Smoker)
+smoker.heart
+
+rownames(smoker.heart)[1:2] <- c("No HD", "HD")
+colnames(smoker.heart) <- c("Non-Smoker", "Smoker")
+barplot((smoker.heart), legend.text = TRUE, beside = TRUE, main = "Smoker/Heart Disease Distribution", ylab = "Number of patients", col = c(2,4))
+
+#From this plot, it looks as though smokers have a larger proportion of heart disease patients than non-smokers do.
+#To more effectively display the higher proportion of heart disease in smokers, we will transpose the barplot.
+
+barplot(t(smoker.heart), legend.text = TRUE, beside = TRUE, main = "Smoker/Heart Disease Distribution", ylab = "Number of patients", col = c(2,4))
+
+#While there are many smokers that do not have heart disease, out of the total number of people with heart disease, there are considerably more smokers. Please consider the following breakdown. Amongst patients with heart disease, 62% of them are smokers, while 38% are not.
+
+smoker_percentages <- prop.table(smoker.heart,margin =1)[2,]
+barplot(smoker_percentages, main = "Heart Disease Distribution by Smokers/Non-Smokers", ylab = "Percentage of patients with HD", col = c(2,4))
+
+#Now, let's look at the odds of having heart disease or having a heart attack as a smoker vs. non-smoker.
+
+smoker.odds=rbind(smoker.heart, 'Odds'=round(smoker.heart[2,]/smoker.heart[1,],2))
+smoker.odds=rbind(smoker.odds, 'Odds Ratio'=c(0,round(smoker.odds[3,2]/smoker.odds[3,1],2)))
+
+#Compared to non-smokers, smokers have 2.14x more chance of getting heart disease or having a heart attack. We will create a table with all of the categorical factors to keep track of which ones cause the largest increase in contracting heart disease or a heart attack.
+cat_vars <- data.frame(matrix(ncol = length(colnames(hd)), nrow = 1))
+colnames(cat_vars) = colnames(hd)
+#Now, we will remove non-categorical variables from the overall chart.
+#BMI, Diabetes, GenHlth, MentlHlth, PhysHlth, Age, Education, Income
+non_cat_vars <- c("BMI","Diabetes","GenHlth","MentlHlth","PhysHlth","Age","Education","Income")
+cat_vars <- subset(cat_vars, select = -c(BMI, Diabetes, GenHlth, MentHlth, PhysHlth, Age, Education, Income))
+rownames(cat_vars) = "Odd Ratio of HD"
+cat_vars["Smoker"] = 2.14
+```
+
+## Blood Pressure Comparison
+
+```{r}
+
+#We will use the above process to investigate all potential correlating categorical factors.
+# Contingency Table --> Barplot --> Transposed Barplot --> Percentage Barplot --> Odds-Ratio 
+
+bp.heart <- xtabs(~HeartDiseaseorAttack+HighBP, data = hd)
+rownames(bp.heart) <- c("No HD", "HD")
+colnames(bp.heart) <- c("Low Blood Pressure", "High Blood Pressure")
+barplot(bp.heart, legend.text = TRUE, main = "Blood Pressure/Heart Disease Distribution", ylab = "Number of patients", col = c(3,5))
+barplot(t(bp.heart), legend.text = TRUE, beside = TRUE, main = "Blood Pressure/Heart Disease Distribution", ylab = "Number of patients", col = c(3,5))
+
+#Immediately, we can see that patients with High BP capture a large amount of the total people with Heart Disease. Now, we will look at the percentage breakdown.
+
+bp_percentages <- prop.table(bp.heart,margin =1)[2,]
+bp_percentages
+
+#Unsurprisingly, 75% of study participants that have heart problems also have high blood pressure.
+barplot(bp_percentages, main = "Heart Disease Distribution by Blood Pressure Range", ylab = "Percentage of patients with HD", col = c(3,5))
+
+#Now, we will calculate the full odd ratio and place it into our overall table for categorical variables.
+
+bp.odds = bp.heart
+bp.odds=rbind(bp.odds, 'Odds'=round(bp.odds[2,]/bp.odds[1,],2))
+bp.odds=rbind(bp.odds, 'Odds Ratio'=c(0,round(bp.odds[3,2]/bp.odds[3,1],2)))
+
+#From this, we now know that people with high blood pressure are 5x more likely to contract heart disease or have a heart attack than people that do not. This is very high, and leads me to believe that it is one of the highest correlating categorical variables.
+
+cat_vars["HighBP"] = 5.0
+```
+
+## High Cholesterol
+We will continue in a similar fashion with High Cholesterol to see how prevalent it is amongst patients with heart problems. 
+
+```{r}
+ch <- xtabs(~HeartDiseaseorAttack+HighChol, data = hd)
+rownames(ch) <- c("No HD", "HD")
+colnames(ch) <- c("Low Cholesterol", "High Cholesterol")
+
+barplot(ch, legend.text = TRUE, main = "Cholesterol Level/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(t(ch), legend.text = TRUE, beside = TRUE, main = "Cholesterol Level/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+#Immediately, we can see that patients with High Cholesterol capture a large amount of the total people with Heart Disease. Now, we will look at the percentage breakdown.
+
+ch_percentages <- prop.table(ch,margin =1)[2,]
+ch_percentages
+
+#Around 70% of people with heart problems have high cholesterol, placing it just under high blood pressure in percentage breakdown
+
+barplot(ch_percentages, main = "Heart Disease Distribution by Cholesterol Range", ylab = "Percentage of patients with HD", col = c(4,7))
+
+#Now, we will calculate the full odd ratio and place it into our overall table for categorical variables.
+
+ch.odds = ch
+ch.odds=rbind(ch.odds, 'Odds'=round(ch.odds[2,]/ch.odds[1,],2))
+ch.odds=rbind(ch.odds, 'Odds Ratio'=c(0,round(ch.odds[3,2]/ch.odds[3,1],2)))
+
+cat_vars["HighChol"] = 3.6
+
+
+#From this, we now know that people with high cholesterol are 3.6x more likely to contract heart disease or have a heart attack than people that do not. This is quite high, making it almost as important of a factor for heart disease likeliness as high blood pressure.
+
+#Although I am not a medical practitioner, I am led to believe that these two often coincide with each other. Let's do a small dive in to the data see how many people that have heart problems have either high BP, high cholesterol, or both.
+
+nrow(hd[hd$HeartDiseaseorAttack == 1,])
+# 23,893 people total have heart problems
+nrow(hd[(hd$HeartDiseaseorAttack == 1 & hd$HighBP == 1),])
+#17,928 people have heart problems and high blood pressure
+nrow(hd[(hd$HeartDiseaseorAttack == 1 & hd$HighChol == 1),])
+#16,753 people have heart problems and high cholesterol
+nrow(hd[(hd$HeartDiseaseorAttack == 1 & hd$HighChol == 1 & hd$HighBP == 1),])
+#13,664 people have heart problems, high BP, and high cholesterol
+
+percentage <- 13664 / 16753
+percentage
+#We now see that 81.56% of people that have high cholesterol and heart problems also have high blood pressure. Therefore, there is a significant overlap in people with high cholesterol and high blood pressure, largely due to overall health/dietary reasons (I suppose).
+
+```
+
+### Cholesterol Checked
+
+The next chronological variable in our list is CholCheck, which asks if patients have had their cholesterol checked within the past 5 years. If we want to dive further into cholesterol's effect on heart disease, it would be interesting to investigate this variable's conjunction with the HighChol variable. 
+
+However, given that we have many different variables to investigate, we will not investigate this yet. We will now drop it from our ultimate odds-ratio table.
+
+```{r}
+cat_vars <- subset(cat_vars, select = -(CholCheck))
+```
+
+##Stroke
+
+Now, we will check the relation between people that have had a stroke to people with heart disease or heart attack. While strokes occur in the brain, they typically occur due to a blocked artery or a lack of blood rushing to the brain. For obvious reasons, heart problems can be a leading cause.
+
+I expect the odds-ratio value to be lower than the previous variables as strokes are typically an extreme result of the previous symptoms.
+
+```{r}
+
+stroke <- xtabs(~HeartDiseaseorAttack+Stroke, data = hd)
+rownames(stroke) <- c("No HD", "HD")
+colnames(stroke) <- c("No Previous Strokes", "Has had a stroke")
+
+barplot(stroke, legend.text = TRUE, main = "Stroke/Heart Disease Distribution", ylab = "Number of patients", col = c(7,10))
+
+barplot(t(stroke), legend.text = TRUE, beside = TRUE, main = "Stroke/Heart Disease Distribution", ylab = "Number of patients", col = c(7,10))
+
+#As predicted, most of the people that have HD have not had a stroke before. Interestingly, though, a considerably large amount of people that have had a stroke also have heart disease.
+
+stroke_percentages <- prop.table(stroke,margin =1)[2,]
+stroke_percentages
+#Around 16.4% of people with heart problems have had a stroke. However, as you will see later, having a stroke makes you much more likely to have heart problems than not having one. 
+
+barplot(stroke_percentages, main = "Heart Disease Distribution by Stroke Occurence", ylab = "Percentage of patients with HD", col = c(7,10))
+
+#Now, we will calculate the full odd ratio and place it into our overall table for categorical variables.
+
+stroke.odds = stroke
+stroke.odds=rbind(stroke.odds, 'Odds'=round(stroke.odds[2,]/stroke.odds[1,],2))
+stroke.odds=rbind(stroke.odds, 'Odds Ratio'=c(0,round(stroke.odds[3,2]/stroke.odds[3,1],2)))
+
+#In my previous assumption, I was mistaken. While I knew that the amount of people that have had a stroke would be low, I said that the odds-ratio amount would be low. In reality, the percentage breakdown is low. But if someone is to have a stroke, they are 6.89x more likely to have heart disease than someone that has not had a stroke.
+
+#This is because there is a very small population of people that have had a stroke, and around 62% of people that have had strokes also have heart disease. Therefore, its odds are significantly higher than someone that has not had a stroke.
+cat_vars["Stroke"] = 6.89
+```
+
+## Diabetes
+In this dataset, Diabetes = 1 indicates pre-diabetes/borderline diabetes (typically occuring with pregnant women), and Diabetes = 2 indicates diabetes. This will make things difficult to classify given our current odds-ratio table format. Thereforem we will simply add an additional column for pre-diabetes odds. 
+
+```{r}
+dia <- xtabs(~HeartDiseaseorAttack+Diabetes, data = hd)
+
+rownames(dia) <- c("No HD", "HD")
+colnames(dia) <- c("No Diabetes", "Prediabetes", "Diabetes")
+
+barplot(dia, legend.text = TRUE, main = "Diabetes/Heart Disease Distribution", ylab = "Number of patients", beside = TRUE, col = c(7,10))
+
+barplot(t(dia), legend.text = TRUE, main = "Stroke/Heart Disease Distribution", ylab = "Number of patients", col = c(7,10,12))
+
+#Visually, we can see that diabetes has a sizeable share of the overall Heart Disease stacked column. 
+
+dia_percentages <- prop.table(dia,margin =1)[2,]
+dia_percentages
+
+#Around 32.97% of people with heart problems also have diabetes, while only around 2.7% of people with heart problems have prediabetes.
+
+barplot(dia_percentages, main = "Heart Disease Distribution by Stroke Occurence", ylab = "Percentage of patients with HD", col = c(7,10, 12))
+
+#Now, we will calculate the full odd ratio and place it into our overall table for categorical variables.
+
+dia.odds = dia
+dia.odds=rbind(dia.odds, 'Odds'=round(dia.odds[2,]/dia.odds[1,],2))
+
+dia.odds=rbind(dia.odds, 'Odds Ratio'=c(0,round(dia.odds[3,2]/dia.odds[3,1],2),round(dia.odds[3,3]/dia.odds[3,1],2)))
+
+cat_vars["Diabetes"] = 3.62
+cat_vars["PreDiabetes"] = 2.12
+cat_vars
+
+#Despite having proportionately low numbers, pre-diabetes is actually a good predictor for heart disease or a heart attack, given that people that have pre-diabetes are 2.12x more likely than those who do not. People with regular diabetes are even more affected, being 3.62x more likely to have heart problems.
+
+```
+## Physical Activity
+For this section, participants self-reported if they had exercised in the past 30 days. That allows for much room for sampling bias, given that it is a relatively low bar and easy to lie about. That said, it is also pretty easy to achieve, even for very unhealthy people.
+
+```{r}
+
+phys <- xtabs(~HeartDiseaseorAttack+PhysActivity, data = hd)
+rownames(phys) <- c("No HD", "HD")
+colnames(phys) <- c("No Physical Activity in Past 30 Days", "Physically Active")
+
+
+barplot(phys, legend.text = TRUE, main = "Physical Activity/Heart Disease Distribution", ylab = "Number of patients", col = c(3,5))
+
+#Let's get another look at the graph, this time with the bars aside. While most people are generally physically active, people with heart disease make up a sizable chunk of the people that are not. 
+
+barplot(phys, legend.text = TRUE, beside = TRUE, main = "Physical Activity/Heart Disease Distribution", ylab = "Number of patients", col = c(3,5))
+
+barplot(t(phys), legend.text = TRUE, beside = TRUE, main = "Physical Activity/Heart Disease Distribution", ylab = "Number of patients", col = c(3,5))
+
+#Let's look at the percentage breakdown to see precisely how inactive some people with heart disease are.
+
+phys_percentages <- prop.table(phys ,margin =1)[2,]
+phys_percentages
+
+#Interestingly, 65% of people with heart disease have been physically active in the past 30 days. Again, we must consider that it is relatively easy for survey participants to lie. 
+
+barplot(phys_percentages, main = "Heart Disease Distribution by Physical Activity", ylab = "Percentage of patients with HD", col = c(3,5))
+
+#Now, we will calculate the full odd ratio and place it into our overall table for categorical variables. This time, we will calculate the odds in reverse as we want to look at how likely it is for someone who does not exercise regularly to get heart problems.
+
+phys_odds = phys
+phys_odds=rbind(phys_odds, 'Odds'=round(phys_odds[2,]/phys_odds[1,],2))
+phys_odds=rbind(phys_odds, 'Odds Ratio'=c(round(phys_odds[3,1]/phys_odds[3,2],2),0))
+
+#From this, we now know that people who do not exercise regularly are 1.78x more likely to contract heart disease than people who exercise at least once every 30 days. This is a relatively weak quantifier, largely due to sample bias (I suspect).
+
+cat_vars["PhysActivity"] = 1.78
+```
+
+## Fruits
+This is to check if participants eat at least one fruit per day. 
+
+```{r}
+
+fruit <- xtabs(~HeartDiseaseorAttack+Fruits, data = hd)
+rownames(fruit) <- c("No HD", "HD")
+colnames(fruit) <- c("No Fruit Eaten Daily", "1+ Fruit per Day")
+
+
+barplot(fruit, legend.text = TRUE, main = "Fruit Eaten/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(fruit, legend.text = TRUE, beside = TRUE, main = "FruitS Eaten Daily/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(t(fruit), legend.text = TRUE, beside = TRUE, main = "Fruit/Heart Disease Distribution", ylab = "Number of patients", col = c(3,5))
+
+fruit_percentage <- prop.table(fruit ,margin =1)[2,]
+fruit_percentage
+
+#Interestingly, 60% of people with heart disease eat at least one fruit every day.The numbers are pretty closely related, indicating to me that this largely isn't a big determinant of heart disease/heart attacks.
+
+barplot(fruit_percentage, main = "Heart Disease Distribution by Fruits Eaten", ylab = "Percentage of patients with HD", col = c(3,5))
+
+#Now, we will calculate the full odd ratio and place it into our overall table for categorical variables. This time, we will calculate the odds in reverse as we want to look at how likely it is for someone who does not exercise regularly to get heart problems.
+
+fruit_odds = fruit
+fruit_odds=rbind(fruit_odds, 'Odds'=round(fruit_odds[2,]/fruit_odds[1,],2))
+fruit_odds=rbind(fruit_odds, 'Odds Ratio'=c(round(fruit_odds[3,1]/fruit_odds[3,2],2),0))
+
+#From this, we now know that people who do not eat at least one fruit a day are 1.1x more likely to have heart problems than those who do not.
+
+cat_vars["Fruits"] = 1.1
+
+
+
+```
+
+## Veggies
+This is to examine patients that do not eat at least one vegetable per day and their likelihood of contracting heart problems.
+
+```{r}
+
+veggie <- xtabs(~HeartDiseaseorAttack+Veggies, data = hd)
+rownames(veggie) <- c("No HD", "HD")
+colnames(veggie) <- c("No Veggie Eaten Daily", "1+ Veggie per Day")
+
+
+barplot(veggie, legend.text = TRUE, main = "Veggies Eaten/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(veggie, legend.text = TRUE, beside = TRUE, main = "VeggieS Eaten Daily/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(t(veggie), legend.text = TRUE, beside = TRUE, main = "veggie/Heart Disease Distribution", ylab = "Number of patients", col = c(3,5))
+
+veggie_percentage <- prop.table(veggie,margin =1)[2,]
+veggie_percentage
+
+#Interestingly, 76.4% of people with heart disease eat at least one veggie every day.
+
+barplot(veggie_percentage, main = "Heart Disease Distribution by Veggies Eaten", ylab = "Percentage of patients with HD", col = c(3,5))
+
+#Now, we will calculate the full odd ratio and place it into our overall table for categorical variables. This time, we will calculate the odds in reverse as we want to look at how likely it is for someone who does not eat vegetables to get heart problems.
+
+veggie_odds = veggie
+veggie_odds=rbind(veggie_odds, 'Odds'=round(veggie_odds[2,]/veggie_odds[1,],2))
+veggie_odds=rbind(veggie_odds, 'Odds Ratio'=c(round(veggie_odds[3,1]/veggie_odds[3,2],2),0))
+
+#From this, we now know that people who do not eat at least one veggie a day are 1.3x more likely to have heart problems than those who do not.
+cat_vars["Veggies"] = 1.3
+```
+
+## Heavy Alcohol Consumption
+
+In the data set, this is defined as adult men having more than 14 drinks per week and adult women having more than 7 drinks per week.
+
+```{r}
+
+alc <- xtabs(~HeartDiseaseorAttack+HvyAlcoholConsump, data = hd)
+rownames(alc) <- c("No HD", "HD")
+colnames(alc) <- c("No Alcohol Consumption", "Heavy Alcohol Consumption")
+
+
+barplot(alc, legend.text = TRUE, main = "Alcohol Consumption/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(alc, legend.text = TRUE, beside = TRUE, main = "Alcohol Consumption/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(t(alc), legend.text = TRUE, beside = TRUE, main = "Alcohol Consumption/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+alc_percentage <- prop.table(alc,margin =1)[2,]
+alc_percentage
+
+#Interestingly, 96.45% of people with heart disease do not drink heavily.
+
+alc_odds = alc
+alc_odds=rbind(alc_odds, 'Odds'=round(alc_odds[2,]/alc_odds[1,],2))
+alc_odds=rbind(alc_odds, 'Odds Ratio'=c(round(alc_odds[3,1]/alc_odds[3,2],2),0))
+
+#This odds ratio says that people that do not drink heavily are 1.83 times as likely to have heart problems.
+cat_vars["HvyAlcoholConsump"] = 1.83
+```
+
+## Any Healthcare
+
+```{r}
+
+anyhealth <- xtabs(~HeartDiseaseorAttack+AnyHealthcare, data = hd)
+rownames(anyhealth) <- c("No HD", "HD")
+colnames(anyhealth) <- c("No Healthcare", "Has Healthcare")
+
+barplot(anyhealth, legend.text = TRUE, main = "Healthcare/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(anyhealth, legend.text = TRUE, beside = TRUE, main = "Healthcare/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(t(anyhealth), legend.text = TRUE, beside = TRUE, main = "Healthcare/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+health_percentage <- prop.table(anyhealth,margin =1)[2,]
+health_percentage
+
+#96.36% of people with heart disease have healthcare.
+
+health_odds = anyhealth
+health_odds=rbind(health_odds, 'Odds'=round(health_odds[2,]/health_odds[1,],2))
+health_odds=rbind(health_odds, 'Odds Ratio'=c(0,round(health_odds[3,2]/health_odds[3,1],2)))
+
+#This odds ratio says that people that have healthcare are 1.38x more likely to have heart problems. This is pretty nonsensical, and should not be considered as a factor for heart problems.
+
+cat_vars["AnyHealthcare"] = 1.38
+```
+
+## No Doc because of Cost
+
+This variable stands for: "was there a time in the past 12 months when you needed to see a doctor but could not because of cost"?
+
+```{r}
+nodoc <- xtabs(~HeartDiseaseorAttack+NoDocbcCost, data = hd)
+rownames(nodoc) <- c("No HD", "HD")
+colnames(nodoc) <- c("No Doc bc of Cost", "Able to visit Doc")
+
+barplot(nodoc, legend.text = TRUE, main = "Doctor Availability/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(nodoc, legend.text = TRUE, beside = TRUE, main = "Doctor Availability/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(t(nodoc), legend.text = TRUE, beside = TRUE, main = "Doctor Availability/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+nodoc_percentage <- prop.table(nodoc,margin =1)[2,]
+nodoc_percentage
+
+#88.91% of people who have heart disease have not been able to visit the doctor in the past six months because of cost.
+
+nodoc_odds = nodoc
+nodoc_odds=rbind(nodoc_odds, 'Odds'=round(nodoc_odds[2,]/nodoc_odds[1,],2))
+nodoc_odds=rbind(nodoc_odds, 'Odds Ratio'=c(0,round(nodoc_odds[3,2]/nodoc_odds[3,1],2)))
+
+#This odds ratio says that people that have not been inhibited by cost are 1.4x times more likely to have heart problems. This also doesn't make much sense. This largely because the vast majority of patients had an instance where they could not visit the doctor because of cost, for both heart disease and non-heart diseased patients. Again, this can be considered as an irrelevantly correlated factor.
+
+cat_vars["NoDocbcCost"] = 1.40
+```
+
+## Difficulty Walking
+
+```{r}
+walk <- xtabs(~HeartDiseaseorAttack+DiffWalk, data = hd)
+rownames(walk) <- c("No HD", "HD")
+colnames(walk) <- c(" No Difficulty Walking", "Difficulty Walking")
+
+barplot(walk, legend.text = TRUE, main = "Walking Difficulty/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(walk, legend.text = TRUE, beside = TRUE, main = "Walking Difficulty/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(t(walk), legend.text = TRUE, beside = TRUE, main = "Walking Difficulty/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+walk_percentage <- prop.table(walk,margin =1)[2,]
+walk_percentage
+
+#41.49% of people who have heart disease have difficulty walking. This is very substantial, even if it isn't a majority.
+
+walk_odds = walk
+walk_odds=rbind(walk_odds, 'Odds'=round(walk_odds[2,]/walk_odds[1,],2))
+walk_odds=rbind(walk_odds, 'Odds Ratio'=c(0,round(walk_odds[3,2]/walk_odds[3,1],2)))
+
+#People that have difficulty walking are 4.29x times more likely to have heart problems.
+
+cat_vars["DiffWalk"] = 4.29
+```
+
+
+## Sex
+
+```{r}
+sex <- xtabs(~HeartDiseaseorAttack+Sex, data = hd)
+rownames(sex) <- c("No HD", "HD")
+colnames(sex) <- c("Female", "Male")
+
+barplot(sex, legend.text = TRUE, main = "Sex/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(sex, legend.text = TRUE, beside = TRUE, main = "Sex/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+barplot(t(sex), legend.text = TRUE, beside = TRUE, main = "Sex/Heart Disease Distribution", ylab = "Number of patients", col = c(4,7))
+
+sex_percentage <- prop.table(sex,margin =1)[2,]
+sex_percentage
+
+#57.29% of people who have heart disease are Male.
+
+sex_odds = sex
+sex_odds=rbind(sex_odds, 'Odds'=round(sex_odds[2,]/sex_odds[1,],2))
+sex_odds=rbind(sex_odds, 'Odds Ratio'=c(0,round(sex_odds[3,2]/sex_odds[3,1],2)))
+
+#Males are 1.75x more likely to have heart problems than Females.
+
+cat_vars["Sex"] = 1.75
+```
+
+
+## BMI
+
+This one will be a little bit different as we are dealing with a continuous variable compared to the previous categorical variables.
+
+BMI calculation; largely, based on the histogram, it appears that the distribution is similar.
+We can look at more exact values to see that the ratio of 1/10 is preserved.
+The basic breakdown of our data tells us that 229,787 polled participants do not have heart disease or have experienced a heart attack, while 23,893 have. Our second sample group is 10.40% of the larger sample group, and 9.42% of the total size. Therefore, if people with heart disease/attack are not disproportionately out of shape, each histogram bar should be 10% or less than the larger section.
+
+
+```{r}
+ggplot(data=hd, aes(x=BMI,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='stack')+
+  labs(x ='BMI', title ='Histogram of BMI')
+
+# argument position = 'identity'. Don't adjust position
+ggplot(data=heart, aes(x=BMI,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position = "identity", alpha = 0.4)
+
+# argument position = 'dodge'. Dodge overlapping objects side-to-side
+ggplot(data=heart, aes(x=BMI,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position = "dodge", alpha = 0.4)
+
+variable_name='BMI'
+response_name='HeartDiseaseorAttack'
+# create 10 break points for the following histograms
+ax=seq(min(hd[,variable_name]),max(hd[,variable_name]),length.out=10)
+# Save histogram data
+hgA = hist(hd[hd[,response_name]==0,variable_name], breaks = ax, plot = FALSE)
+hgB = hist(hd[hd[,response_name]==1,variable_name], breaks = ax, plot = FALSE)
+
+table1=rbind('FALSE'=hgA$counts,'TRUE'=hgB$counts)
+# The colname are break points of the histogram 
+# round the breaks to integers and simplify the results. 
+colnames(table1)=round(hgA$breaks[-1],0)
+# add row sum 
+table1=cbind(table1, 'Total'=apply(table1,1,sum))
+# add column sum
+table1=rbind(table1, 'Total'=apply(table1,2,sum))
+# add odds
+table1=rbind(table1, 'Odds'=round(table1[2,]/table1[1,],2))
+# print table
+table1
+```
+Based on the odds ratio, the people most likely to have heart disease have BMIs at the 41-69 range.
+According to the CDC, if a BMI is higher than 30.0, a person is considered obese. Let's extend out this sequence, and compare people from the healthy BMI range to people above 30.0.
+
+```{r}
+#Odds recalculation with 15 data points
+
+ax=seq(min(hd[,variable_name]),max(hd[,variable_name]),length.out=25)
+# Save histogram data
+hgA = hist(hd[hd[,response_name]==0,variable_name], breaks = ax, plot = FALSE)
+hgB = hist(hd[hd[,response_name]==1,variable_name], breaks = ax, plot = FALSE)
+
+table1=rbind('FALSE'=hgA$counts,'TRUE'=hgB$counts)
+# The colname are break points of the histogram 
+# round the breaks to integers and simplify the results. 
+colnames(table1)=round(hgA$breaks[-1],0)
+# add row sum 
+table1=cbind(table1, 'Total'=apply(table1,1,sum))
+# add column sum
+table1=rbind(table1, 'Total'=apply(table1,2,sum))
+# add odds
+table1=rbind(table1, 'Odds'=round(table1[2,]/table1[1,],2))
+# print table
+table1
+
+highbmi_false <- 41180.00 + 18947.00 + 7533.00 + 5111.00 + 1924.00 + 1326.00 + 632.00 + 232.00 + 173.00 + 66.00 + 41.00 + 72.00 + 112.00 + 114.00 + 78.00 + 104.00 + 30.00 + 30.0 + 17.00
+lowbmi_false <- 173.00 + 6304.00 + 28016.00 + 66919.00 + 50653.00
+lowbmi_true <- 27.00 + 591.00 + 1809.00 + 5949.00 + 5388.00
+highbmi_true <- 5090.00 + 2589.00 + 1033.00 + 730.00 + 267.00 + 199.00 + 102.00 + 34.00 + 22.00 + 11.00 + 10.00 + 6.00 +  6.00 + 10.00 + 10.00  + 3.00 + 1.00 + 3.0 + 3.00
+
+bmi_chart <- data.frame(matrix(ncol = 2, nrow = 2))
+bmi_chart[1,1] = lowbmi_false
+bmi_chart[1,2] = highbmi_false
+bmi_chart[2,1] = lowbmi_true
+bmi_chart[2,2] = highbmi_true
+rownames(bmi_chart) = c("FALSE", "TRUE")
+colnames(bmi_chart) = c("Low BMI", "High BMI")
+
+
+bmi_odds = bmi_chart
+bmi_odds=rbind(bmi_odds, 'Odds'=round(bmi_odds[2,]/bmi_odds[1,],2))
+bmi_odds=rbind(bmi_odds, 'Odds Ratio'=c(0,round(bmi_odds[3,2]/bmi_odds[3,1],2)))
+cat_vars["BMI"] = 1.44
+
+```
+
+People in the high BMI range are 1.44x more likely to have heart problems than people with a normal BMI range.
+
+## General Health
+People rated their general health out of 5. Given that this is another self-rating statistic, there is going to be some inherent bias.
+
+```{r}
+ggplot(data=hd, aes(x=GenHlth,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='stack')+
+  labs(x ='BMI', title ='Histogram of General Health')
+
+# argument position = 'dodge'. Dodge overlapping objects side-to-side
+ggplot(data=heart, aes(x=BMI,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position = "identity", alpha = 0.4)
+
+health <- data.frame(matrix(ncol = 5, nrow = 2))
+colnames(health) <- c(1:5)
+rownames(health) <- c("FALSE", "TRUE")
+health[1,1] = nrow(hd[(hd$GenHlth == 1 & hd$HeartDiseaseorAttack == 0),])
+health[1,2] = nrow(hd[(hd$GenHlth == 2 & hd$HeartDiseaseorAttack == 0),])
+health[1,3] = nrow(hd[(hd$GenHlth == 3 & hd$HeartDiseaseorAttack == 0),])
+health[1,4] = nrow(hd[(hd$GenHlth == 4 & hd$HeartDiseaseorAttack == 0),])
+health[1,5] = nrow(hd[(hd$GenHlth == 5 & hd$HeartDiseaseorAttack == 0),])
+health[2,1] = nrow(hd[(hd$GenHlth == 1 & hd$HeartDiseaseorAttack == 1),])
+health[2,2] = nrow(hd[(hd$GenHlth == 2 & hd$HeartDiseaseorAttack == 1),])
+health[2,3] = nrow(hd[(hd$GenHlth == 3 & hd$HeartDiseaseorAttack == 1),])
+health[2,4] = nrow(hd[(hd$GenHlth == 4 & hd$HeartDiseaseorAttack == 1),])
+health[2,5] = nrow(hd[(hd$GenHlth == 5 & hd$HeartDiseaseorAttack == 1),])
+health_odds = health
+health_odds = rbind(health_odds, 'Odds'=round(health_odds[2,]/health_odds[1,],2))
+health_odds
+
+```
+Oddly, people that rate their general health as a 5 have by far the highest odd-ratio of having heart disease, while the people that rate their health as a 1 have the lowest odd-ratio. This is reinforced by the first histogram that we included, where the 5th bar can be clearly seen to have a large percentage.
+
+## Mental Health
+
+Mental Health - "Now thinking about your mental health, which includes stress, depression, and problems with emotions, for how many days during the past 30 days was your mental health not good?"
+
+```{r}
+ggplot(data=hd, aes(x=MentHlth,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='stack')+
+  labs(x ='Mental Health', title ='Histogram of Mental Health')
+
+ggplot(data=hd, aes(x=MentHlth,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='identity')+
+  labs(x ='Mental Health', title ='Histogram of Mental Health')
+
+# argument position = 'dodge'. Dodge overlapping objects side-to-side
+ggplot(data=hd, aes(x=MentHlth,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position = "dodge", alpha = 0.4) + 
+  labs(x ='Mental Health', title ='Histogram of Mental Health')
+
+
+variable_name='MentHlth'
+response_name='HeartDiseaseorAttack'
+# create 10 break points for the following histograms
+ax=seq(min(hd[,variable_name]),max(hd[,variable_name]),length.out=10)
+# Save histogram data
+hgA = hist(hd[hd[,response_name]==0,variable_name], breaks = ax, plot = FALSE)
+hgB = hist(hd[hd[,response_name]==1,variable_name], breaks = ax, plot = FALSE)
+
+table3=rbind('FALSE'=hgA$counts,'TRUE'=hgB$counts)
+# The colname are break points of the histogram 
+# round the breaks to integers and simplify the results. 
+colnames(table3)=round(hgA$breaks[-1],0)
+# add row sum 
+table3=cbind(table3, 'Total'=apply(table3,1,sum))
+# add column sum
+table3=rbind(table3, 'Total'=apply(table3,2,sum))
+# add odds
+table3=rbind(table3, 'Odds'=round(table3[2,]/table3[1,],2))
+# print table
+table3
+```
+Unsurprisingly, people that report emotional problems 30 out of 30 days have the highest odds of having heart problems.
+
+## Physical Health
+
+Physical Health: "Now thinking about your physical health, which includes physical illness and injury, for how many days during the past 30 days was your physical health not good?"
+
+```{r}
+ggplot(data=hd, aes(x=PhysHlth,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='stack')+
+  labs(x ='Physical Health', title ='Histogram of Physical Health')
+
+ggplot(data=hd, aes(x=PhysHlth,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='identity')+
+  labs(x ='Physical Health', title ='Histogram of Physical Health')
+
+# arguPhys position = 'dodge'. Dodge overlapping objects side-to-side
+ggplot(data=hd, aes(x=PhysHlth,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position = "dodge", alpha = 0.4) + 
+  labs(x ='Physical Health', title ='Histogram of Physical Health')
+
+variable_name='PhysHlth'
+response_name='HeartDiseaseorAttack'
+# create 10 break points for the following histograms
+ax=seq(min(hd[,variable_name]),max(hd[,variable_name]),length.out=10)
+# Save histogram data
+hgA = hist(hd[hd[,response_name]==0,variable_name], breaks = ax, plot = FALSE)
+hgB = hist(hd[hd[,response_name]==1,variable_name], breaks = ax, plot = FALSE)
+
+table3=rbind('FALSE'=hgA$counts,'TRUE'=hgB$counts)
+# The colname are break points of the histogram 
+# round the breaks to integers and simplify the results. 
+colnames(table3)=round(hgA$breaks[-1],0)
+# add row sum 
+table3=cbind(table3, 'Total'=apply(table3,1,sum))
+# add column sum
+table3=rbind(table3, 'Total'=apply(table3,2,sum))
+# add odds
+table3=rbind(table3, 'Odds'=round(table3[2,]/table3[1,],2))
+# print table
+table3
+```
+Unsurprisingly, the people with the highest odds of heart problems report physical problems every day out of the month.
+
+## Age
+Age is divided into 14 different categories. Unfortunately, it is unknown what they are on the Kaggle description.
+
+```{r}
+ggplot(data=hd, aes(x=Age,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='stack')+
+  labs(x ='Age', title ='Histogram of Age')
+
+ggplot(data=hd, aes(x=Age,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='identity')+
+  labs(x ='Age', title ='Histogram of Age')
+
+ggplot(data=hd, aes(x=Age,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position = "dodge", alpha = 0.4) + 
+  labs(x ='Age', title ='Histogram of Age')
+
+variable_name='Age'
+response_name='HeartDiseaseorAttack'
+
+#We'll use 14 stacks for the 14 different categories.
+ax=seq(min(hd[,variable_name]),max(hd[,variable_name]),length.out=13)
+# Save histogram data
+hgA = hist(hd[hd[,response_name]==0,variable_name], breaks = ax, plot = FALSE)
+hgB = hist(hd[hd[,response_name]==1,variable_name], breaks = ax, plot = FALSE)
+
+table3=rbind('FALSE'=hgA$counts,'TRUE'=hgB$counts)
+# The colname are break points of the histogram 
+# round the breaks to integers and simplify the results. 
+colnames(table3)=round(hgA$breaks[-1],0)
+# add row sum 
+table3=cbind(table3, 'Total'=apply(table3,1,sum))
+# add column sum
+table3=rbind(table3, 'Total'=apply(table3,2,sum))
+# add odds
+table3=rbind(table3, 'Odds'=round(table3[2,]/table3[1,],2))
+# print table
+table3
+```
+The people in the oldest age categories have by far the highest odds out of full age range. The first 4 categories have very little people with heart problems, and it steadily escalates until it reaches Category 6 and breaks into exponential growth before plateauing to the 3000-4000 from 9-14.
+
+## Education
+
+Education is the highest grade of education a patient has reached.
+```{r}
+ggplot(data=hd, aes(x=Education,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='stack')+
+  labs(x ='Education', title ='Histogram of Education')
+
+ggplot(data=hd, aes(x=Education,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='identity')+
+  labs(x ='Education', title ='Histogram of Education')
+
+ggplot(data=hd, aes(x=Age,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position = "dodge", alpha = 0.4) + 
+  labs(x ='Education', title ='Histogram of Education')
+
+variable_name='Education'
+response_name='HeartDiseaseorAttack'
+
+ax=seq(min(hd[,variable_name]),max(hd[,variable_name]),length.out=5)
+# Save histogram data
+hgA = hist(hd[hd[,response_name]==0,variable_name], breaks = ax, plot = FALSE)
+hgB = hist(hd[hd[,response_name]==1,variable_name], breaks = ax, plot = FALSE)
+
+table3=rbind('FALSE'=hgA$counts,'TRUE'=hgB$counts)
+# The colname are break points of the histogram 
+# round the breaks to integers and simplify the results. 
+colnames(table3)=round(hgA$breaks[-1],0)
+# add row sum 
+table3=cbind(table3, 'Total'=apply(table3,1,sum))
+# add column sum
+table3=rbind(table3, 'Total'=apply(table3,2,sum))
+# add odds
+table3=rbind(table3, 'Odds'=round(table3[2,]/table3[1,],2))
+# print table
+table3
+```
+For people with lower education, they are more likely to have heart problems. 
+
+## Income
+
+```{r}
+ggplot(data=hd, aes(x=Income,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='stack')+
+  labs(x ='Income', title ='Histogram of Income')
+
+ggplot(data=hd, aes(x=Income,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position='identity')+
+  labs(x ='Income', title ='Histogram of Income')
+
+ggplot(data=hd, aes(x=Income,fill = HeartDiseaseorAttack)) +
+  geom_histogram(bins=20,position = "dodge", alpha = 0.4) + 
+  labs(x ='Income', title ='Histogram of Income')
+
+variable_name='Income'
+response_name='HeartDiseaseorAttack'
+
+ax=seq(min(hd[,variable_name]),max(hd[,variable_name]),length.out=8)
+# Save histogram data
+hgA = hist(hd[hd[,response_name]==0,variable_name], breaks = ax, plot = FALSE)
+hgB = hist(hd[hd[,response_name]==1,variable_name], breaks = ax, plot = FALSE)
+
+table3=rbind('FALSE'=hgA$counts,'TRUE'=hgB$counts)
+# The colname are break points of the histogram 
+# round the breaks to integers and simplify the results. 
+colnames(table3)=round(hgA$breaks[-1],0)
+# add row sum 
+table3=cbind(table3, 'Total'=apply(table3,1,sum))
+# add column sum
+table3=rbind(table3, 'Total'=apply(table3,2,sum))
+# add odds
+table3=rbind(table3, 'Odds'=round(table3[2,]/table3[1,],2))
+# print table
+table3
+```
+Lower income patients have 4x more likelihood to have heart disease than people in the highest income bracket.
+
+# Summary
+
+```{r}
+cat_vars
+```
+
+Although it is more difficult to compare the continuous variables to the categorical variables, we can make assess some of the leading factors for heart disease and heart attacks.
+
+Amongst the categorical variables, the leading factors are past Stroke - 6.89x, High Blood Pressure - 5.0x, Difficulty Walking - 4.29x, Diabetes - 3.62x, and High Cholesterol - 3.6x.
+
+Variables like Fruits, Veggies, Heavy Alcohol Consumption, Sex, and BMI are not as big of factors.
+
+When looking at the outer extremes of categorical variables like Income and Education, the odds of heart disease are much less for people with higher ranking levels.
